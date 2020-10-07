@@ -10,6 +10,7 @@ import style from "./app.scss";
 const App = () => {
   const model = examples[0].model;
   const econ = createEconomy(model);
+  console.log(econ);
   econ.addResource();
   setTimeout(() => {
   //econ.addResource();

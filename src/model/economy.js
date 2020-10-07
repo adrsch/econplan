@@ -173,8 +173,9 @@ const createProductTechniques = (model) => ({
 
 // Add/remove/rename methods
 
-const addProduct = (model, addKey, 
-
+const addProduct = (model, addKey, yearlyTargets, techniques) => {
+  model.targets = model.targets.map(
+  )};
 const removeProduct = (model, deleteKey) => {
   delete model.production[deleteKey];
   Object.keys(model.production).forEach((productKey) => {
@@ -187,23 +188,24 @@ const removeProduct = (model, deleteKey) => {
   });
 };
 
-const createEconomy = (model) => ({
-  model: model,
-  schema: function() { return generateSchema(this.model); },
+const economy = ({
+  schema: function() { return generateSchema(this); },
   addResource: function() {
-    return getUnusedName(defaults.resource, this.model)
+    return getUnusedName(defaults.resource, this)
       .then((resourceKey) => addResource(
-        this.model,
+        this,
         resourceKey,
-        createResourceYearlyAmounts(this.model),
-        createResourceProductionInput(this.model),
+        createResourceYearlyAvailability(this),
+        createResourceProductionInput(this),
       ));
   },
-  removeResource: function(resourceKey) { removeResource(this.model, resourceKey); },
-  renameResource: function(oldKey, newKey) { renameResource(this.model, oldKey, newKey); },
-  removeProduct: function(productKey) { removeProduct(this.model, productKey); },
+  removeResource: function(resourceKey) { removeResource(this, resourceKey); },
+  renameResource: function(oldKey, newKey) { renameResource(this, oldKey, newKey); },
+  removeProduct: function(productKey) { removeProduct(this, productKey); },
 });
 
+const createEconomy = (model) =>
+  Object.assign(Object.create(economy), model);
 
 
 export { generateSchema, createEconomy };

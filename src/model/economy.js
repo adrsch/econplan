@@ -159,7 +159,7 @@ const createProductTechniques = (model) => ({
     depreciation: 0,
     output: 0,
     other: {
-      inputs: Object.keys(model.production)
+      inputs: [...Object.keys(model.production), ...Object.keys(model.resources[0])]
         .reduce((acc, cur) => ({ ...acc, [cur]: 0 }), {}),
       capitalStocks: Object.keys(model.production)
         .reduce((acc, cur) => ({ ...acc, [cur]: 0 }), {}),
@@ -167,15 +167,54 @@ const createProductTechniques = (model) => ({
         .reduce((acc, cur) => ({ ...acc, [cur]: 0 }), {}),
     },
   other: Object.keys(model.production)
-    .reduce((acc, cur) => ({ ...acc, [cur]: 0 }), {}),
+    .reduce((acc, cur) => ({ ...acc, [cur]: {
+      inputs: 0,
+      capitalStocks: 0,
+      depreciation: 0,
+    }}), {}),
   },
 });
 
 // Add/remove/rename methods
 
 const addProduct = (model, addKey, yearlyTargets, techniques) => {
-  model.targets = model.targets.map(
-  )};
+  for (let year = 0; year < yearlyTargets.length; year++) {
+    model.targets[year] = ({ ...model.targets[year], [addKey]: yearlyTargets[year] });
+  }
+  model.production = {
+    [addKey]: {
+      inputs: {
+        [addKey]: techniques.self.inputs,
+        ...techniques.self.other.inputs,
+      },
+      capitalStocks: {
+        [addKey]: techniques.self.capitalStocks,
+        ...techniques.self.other.capitalStocks,
+      },
+      depreciation: {
+        [addKey]: techniques.self.depreciation,
+        ...techniques.self.other.depreciation,
+      },
+      output: techniques.self.output,
+    },
+    ...Object.keys(model.production).reduce((acc, cur) => ({ ...acc, [cur]: {
+      inputs: {
+        [addKey]: techniques.other.inputs[cur],
+        ...model.production[cur].inputs,
+      },
+      capitalStocks: {
+        [addKey]: techniques.other.capitalStocks[cur],
+        ...model.production[cur].capitalStocks,
+      },
+      depreciation: {
+        [addKey]: techniques.other.depreciation[cur],
+        ...model.production[cur].depreciation,
+      },
+      output: model.production[cur].output,
+    }}), {}),
+  };
+};
+
 const removeProduct = (model, deleteKey) => {
   delete model.production[deleteKey];
   Object.keys(model.production).forEach((productKey) => {
@@ -186,6 +225,16 @@ const removeProduct = (model, deleteKey) => {
   model.targets.forEach((year) => {
     delete year[deleteKey];
   });
+};
+
+const renameProduct = (model, oldKey, newKey) => {
+  addProduct(
+    model,
+    newKey,
+    getProductYearlyTargets(model, oldkey),
+    getProductTechniques(model, oldKey),
+  );
+  removeProduct(model, oldKey);
 };
 
 const economy = ({
@@ -201,7 +250,17 @@ const economy = ({
   },
   removeResource: function(resourceKey) { removeResource(this, resourceKey); },
   renameResource: function(oldKey, newKey) { renameResource(this, oldKey, newKey); },
+  addProduct: function() {
+    return getUnusedName(defaults.product, this)
+      .then((productKey) => addResource(
+        this,
+        productKey,
+        createProductYearlyTargets(this),
+        createProductTechniques(this),
+      ));
+  },
   removeProduct: function(productKey) { removeProduct(this, productKey); },
+  renameProduct: function(oldKey, newKey) { renameProduct(this, oldKey, newKey); },
 });
 
 const createEconomy = (model) =>
